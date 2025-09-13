@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Progress } from './ui/progress';
@@ -20,6 +20,7 @@ interface Question {
     title: string;
     instruction: string;
     suggestedWordCount?: string;
+    imageUrl?: string; // Image per subtask
   }>;
 }
 
@@ -37,6 +38,7 @@ interface Task {
   wordCount: number;
   isCompleted: boolean;
   suggestedWordCount?: string;
+  imageUrl?: string;
 }
 
 export function WritingTask({ question, studentName, onBack }: WritingTaskProps) {
@@ -48,7 +50,7 @@ export function WritingTask({ question, studentName, onBack }: WritingTaskProps)
   const [totalWordCount, setTotalWordCount] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Initialize tasks from admin-created subtasks or defaults
+  // Initialize tasks
   useEffect(() => {
     if (question.subtasks && question.subtasks.length > 0) {
       const initialTasks = question.subtasks.map(subtask => ({
@@ -58,11 +60,11 @@ export function WritingTask({ question, studentName, onBack }: WritingTaskProps)
         response: '',
         wordCount: 0,
         isCompleted: false,
-        suggestedWordCount: subtask.suggestedWordCount
+        suggestedWordCount: subtask.suggestedWordCount,
+        imageUrl: subtask.imageUrl
       }));
       setTasks(initialTasks);
     } else {
-      // Default 3 tasks if admin hasn't configured
       const defaultTasks = [
         { id: 1, title: 'Tâche 1', instruction: 'Présentez votre point de vue (60-80 mots)', response: '', wordCount: 0, isCompleted: false, suggestedWordCount: '60-80 mots' },
         { id: 2, title: 'Tâche 2', instruction: 'Développez avec des exemples (120-150 mots)', response: '', wordCount: 0, isCompleted: false, suggestedWordCount: '120-150 mots' },
@@ -72,7 +74,7 @@ export function WritingTask({ question, studentName, onBack }: WritingTaskProps)
     }
   }, [question]);
 
-  // Single timer for all tasks
+  // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isTimerActive && timeLeft > 0 && !isCompleted) {
@@ -135,6 +137,22 @@ export function WritingTask({ question, studentName, onBack }: WritingTaskProps)
 
   const getCurrentTask = () => tasks[currentTaskIndex];
 
+  // Get word count status with color coding
+  const getWordCountStatus = (currentWords: number, suggested?: string) => {
+    if (!suggested) return 'text-gray-600';
+    
+    const match = suggested.match(/(\d+)-(\d+)/);
+    if (!match) return 'text-gray-600';
+    
+    const min = parseInt(match[1]);
+    const max = parseInt(match[2]);
+    
+    if (currentWords < min * 0.8) return 'text-red-500'; // Too few
+    if (currentWords >= min && currentWords <= max) return 'text-green-600'; // Perfect range
+    if (currentWords > max * 1.2) return 'text-orange-500'; // Too many
+    return 'text-blue-600'; // Getting close
+  };
+
   const downloadAllResponses = () => {
     const allContent = tasks.map((task) => 
       `${task.title} (${task.wordCount} mots):\n${task.instruction}\n\nRéponse:\n${task.response}\n\n${'='.repeat(50)}\n\n`
@@ -177,9 +195,12 @@ Mots: ${totalWordCount}`;
     window.open(whatsappUrl, '_blank');
   };
 
-  if (tasks.length === 0) return <div>Chargement...</div>;
+  if (tasks.length === 0) {
+    return <div className="max-w-4xl mx-auto">Chargement...</div>;
+  }
 
   const completedTasksCount = tasks.filter(t => t.isCompleted).length;
+  const currentTask = getCurrentTask();
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -201,7 +222,7 @@ Mots: ${totalWordCount}`;
         </CardHeader>
         <CardContent>
           {question.imageUrl && (
-            <img src={question.imageUrl} alt="Document" className="w-full max-h-96 object-contain mb-4" />
+            <img src={question.imageUrl} alt="Document" className="w-full max-h-96 object-contain mb-4 rounded-lg border" />
           )}
           <p>{question.content}</p>
           <Alert className="mt-4">
@@ -269,7 +290,12 @@ Mots: ${totalWordCount}`;
               >
                 {task.isCompleted && <CheckCircle2 className="h-4 w-4 text-green-600" />}
                 {task.title}
-                <Badge variant="secondary">{task.wordCount}</Badge>
+                <Badge 
+                  variant="secondary"
+                  className={getWordCountStatus(task.wordCount, task.suggestedWordCount)}
+                >
+                  {task.wordCount}
+                </Badge>
               </Button>
             ))}
           </div>
@@ -280,26 +306,67 @@ Mots: ${totalWordCount}`;
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <span>{getCurrentTask().title}</span>
-            {getCurrentTask().suggestedWordCount && (
-              <span className="text-sm text-gray-500">
-                Suggéré: {getCurrentTask().suggestedWordCount}
+            <span>{currentTask.title}</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-lg font-mono ${getWordCountStatus(currentTask.wordCount, currentTask.suggestedWordCount)}`}>
+                {currentTask.wordCount} mots
               </span>
-            )}
+              {currentTask.suggestedWordCount && (
+                <span className="text-sm text-gray-500">
+                  (Nombre de mots: {currentTask.suggestedWordCount})
+                </span>
+              )}
+            </div>
           </CardTitle>
-          <CardDescription>{getCurrentTask().instruction}</CardDescription>
+          <CardDescription>{currentTask.instruction}</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Task-specific image */}
+          {currentTask.imageUrl && (
+            <div className="mb-4">
+              <img 
+                src={currentTask.imageUrl} 
+                alt={`Image pour ${currentTask.title}`} 
+                className="w-full max-h-64 object-contain rounded-lg border"
+              />
+            </div>
+          )}
+          
           <Textarea
             ref={textareaRef}
             placeholder={`Rédigez votre réponse...`}
-            value={getCurrentTask().response}
+            value={currentTask.response}
             onChange={(e) => handleTextChange(e.target.value)}
             className="min-h-[300px] resize-none"
             disabled={isCompleted}
           />
           
-          {!isTimerActive && !isCompleted && getCurrentTask().response.length === 0 && (
+          {/* Real-time word counter */}
+          <div className="mt-2 flex justify-between items-center text-sm">
+            <span className={getWordCountStatus(currentTask.wordCount, currentTask.suggestedWordCount)}>
+              {currentTask.wordCount} mots
+              {currentTask.suggestedWordCount && (
+                <span className="text-gray-500"> / {currentTask.suggestedWordCount}</span>
+              )}
+            </span>
+            {currentTask.suggestedWordCount && (
+              <span className="text-gray-400">
+                {(() => {
+                  const match = currentTask.suggestedWordCount.match(/(\d+)-(\d+)/);
+                  if (!match) return '';
+                  const min = parseInt(match[1]);
+                  const max = parseInt(match[2]);
+                  const current = currentTask.wordCount;
+                  
+                  if (current < min) return `${min - current} mots de plus nécessaires`;
+                  if (current > max) return `${current - max} mots en trop`;
+                  return 'Dans la plage recommandée';
+                })()}
+              </span>
+            )}
+          </div>
+          
+          {!isTimerActive && !isCompleted && currentTask.response.length === 0 && (
             <Alert className="mt-4">
               <AlertDescription>
                 Le chronomètre démarrera quand vous commencerez à écrire.
