@@ -372,7 +372,7 @@ export function AdminInterface() {
                         <div>
                           <Label>Image pour {subtask.title} (optionnel)</Label>
                           <Input
-                            ref={(el) => subtaskFileRefs.current[index] = el}
+                            ref={(el) => {subtaskFileRefs.current[index] = el;}}
                             type="file"
                             accept="image/*"
                             onChange={(e) => handleSubtaskImageUpload(index, e)}
