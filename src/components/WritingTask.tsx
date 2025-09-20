@@ -1,556 +1,11 @@
-
-// // import { useState, useEffect, useRef } from 'react';
-// // import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-// // import { Button } from './ui/button';
-// // import { Textarea } from './ui/textarea';
-// // import { Progress } from './ui/progress';
-// // import { ArrowLeft, Clock, FileText, Send } from 'lucide-react';
-// // import { Alert, AlertDescription } from './ui/alert';
-
-// // interface Question {
-// //   id: string;
-// //   type: 'writing' | 'audio';
-// //   title: string;
-// //   content: string;
-// //   imageUrl?: string;
-// //   timeLimit: number;
-// //   wordLimit?: number;
-// // }
-
-// // interface WritingTaskProps {
-// //   question: Question;
-// //   studentName: string;
-// //   onBack: () => void;
-// // }
-
-// // export function WritingTask({ question, studentName, onBack }: WritingTaskProps) {
-// //   const [response, setResponse] = useState('');
-// //   const [timeLeft, setTimeLeft] = useState(question.timeLimit * 60); // Convert to seconds
-// //   const [isTimerActive, setIsTimerActive] = useState(false);
-// //   const [isCompleted, setIsCompleted] = useState(false);
-// //   const [wordCount, setWordCount] = useState(0);
-// //   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-// //   useEffect(() => {
-// //     let interval: NodeJS.Timeout;
-// //     if (isTimerActive && timeLeft > 0 && !isCompleted) {
-// //       interval = setInterval(() => {
-// //         setTimeLeft((time) => {
-// //           if (time <= 1) {
-// //             setIsTimerActive(false);
-// //             setIsCompleted(true);
-// //             // Auto-download the response when time is up
-// //             downloadResponse();
-// //             return 0;
-// //           }
-// //           return time - 1;
-// //         });
-// //       }, 1000);
-// //     }
-// //     return () => clearInterval(interval);
-// //   }, [isTimerActive, timeLeft, isCompleted]);
-
-// //   useEffect(() => {
-// //     // Count words
-// //     const words = response.trim().split(/\s+/).filter(word => word.length > 0);
-// //     setWordCount(words.length);
-// //   }, [response]);
-
-// //   const handleTextChange = (value: string) => {
-// //     setResponse(value);
-    
-// //     // Start timer on first keystroke
-// //     if (!isTimerActive && !isCompleted && value.length === 1) {
-// //       setIsTimerActive(true);
-// //     }
-// //   };
-
-// //   const formatTime = (seconds: number) => {
-// //     const mins = Math.floor(seconds / 60);
-// //     const secs = seconds % 60;
-// //     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-// //   };
-
-// //   const getProgressPercentage = () => {
-// //     const totalTime = question.timeLimit * 60;
-// //     return ((totalTime - timeLeft) / totalTime) * 100;
-// //   };
-
-// //   const getWordCountStatus = () => {
-// //     if (!question.wordLimit) return 'text-gray-600';
-// //     if (wordCount < question.wordLimit * 0.8) return 'text-orange-600';
-// //     if (wordCount > question.wordLimit * 1.2) return 'text-red-600';
-// //     return 'text-green-600';
-// //   };
-
-// //   const downloadResponse = () => {
-// //     if (response.trim()) {
-// //       const blob = new Blob([response], { type: 'text/plain' });
-// //       const url = URL.createObjectURL(blob);
-// //       const a = document.createElement('a');
-// //       a.href = url;
-// //       a.download = `${studentName}_${question.title}_${new Date().toISOString().split('T')[0]}.txt`;
-// //       document.body.appendChild(a);
-// //       a.click();
-// //       document.body.removeChild(a);
-// //       URL.revokeObjectURL(url);
-// //     }
-// //   };
-
-// //   const handleSubmit = () => {
-// //     setIsCompleted(true);
-// //     setIsTimerActive(false);
-    
-// //     // Download the response
-// //     downloadResponse();
-    
-// //     // Create WhatsApp message to admin
-// //     const message = `TCF Canada Writing Task Submission
-
-// // Student: ${studentName}
-// // Task: ${question.title}
-// // Word Count: ${wordCount}${question.wordLimit ? ` / ${question.wordLimit}` : ''}
-// // Time Used: ${formatTime(question.timeLimit * 60 - timeLeft)}
-
-// // Note: Written response file has been downloaded and will be shared separately.`;
-
-// //     const encodedMessage = encodeURIComponent(message);
-// //     const whatsappUrl = `https://wa.me/+237620361340?text=${encodedMessage}`;
-// //     window.open(whatsappUrl, '_blank');
-// //   };
-
-// //   const canSubmit = response.trim().length > 0 && (isCompleted || timeLeft === 0);
-
-// //   return (
-// //     <div className="max-w-4xl mx-auto space-y-6">
-// //       {/* Header */}
-// //       <div className="flex items-center gap-4">
-// //         <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
-// //           <ArrowLeft className="h-4 w-4" />
-// //           Back to Tasks
-// //         </Button>
-// //         <div>
-// //           <h2 className="text-xl font-semibold">{question.title}</h2>
-// //           <p className="text-gray-600">Student: {studentName}</p>
-// //         </div>
-// //       </div>
-
-// //       {/* Task Instructions */}
-// //       <Card>
-// //         <CardHeader>
-// //           <CardTitle className="flex items-center gap-2">
-// //             <FileText className="h-5 w-5" />
-// //             Task Instructions
-// //           </CardTitle>
-// //         </CardHeader>
-// //         <CardContent className="space-y-4">
-// //           {question.imageUrl && (
-// //             <div className="border rounded-lg overflow-hidden">
-// //               <img 
-// //                 src={question.imageUrl} 
-// //                 alt="Task image" 
-// //                 className="w-full max-h-96 object-contain"
-// //               />
-// //             </div>
-// //           )}
-// //           <p className="whitespace-pre-wrap">{question.content}</p>
-// //         </CardContent>
-// //       </Card>
-
-// //       {/* Timer and Stats */}
-// //       <div className="grid md:grid-cols-3 gap-4">
-// //         <Card>
-// //           <CardContent className="pt-6">
-// //             <div className="flex items-center gap-3">
-// //               <Clock className="h-5 w-5 text-blue-600" />
-// //               <div>
-// //                 <p className="text-sm text-gray-600">Time Remaining</p>
-// //                 <p className={`text-lg font-mono ${timeLeft < 300 ? 'text-red-600' : 'text-gray-900'}`}>
-// //                   {formatTime(timeLeft)}
-// //                 </p>
-// //               </div>
-// //             </div>
-// //           </CardContent>
-// //         </Card>
-
-// //         <Card>
-// //           <CardContent className="pt-6">
-// //             <div className="flex items-center gap-3">
-// //               <FileText className="h-5 w-5 text-green-600" />
-// //               <div>
-// //                 <p className="text-sm text-gray-600">Word Count</p>
-// //                 <p className={`text-lg font-mono ${getWordCountStatus()}`}>
-// //                   {wordCount}{question.wordLimit ? ` / ${question.wordLimit}` : ''}
-// //                 </p>
-// //               </div>
-// //             </div>
-// //           </CardContent>
-// //         </Card>
-
-// //         <Card>
-// //           <CardContent className="pt-6">
-// //             <div>
-// //               <p className="text-sm text-gray-600 mb-2">Progress</p>
-// //               <Progress value={getProgressPercentage()} className="h-2" />
-// //               <p className="text-xs text-gray-500 mt-1">
-// //                 {Math.round(getProgressPercentage())}% complete
-// //               </p>
-// //             </div>
-// //           </CardContent>
-// //         </Card>
-// //       </div>
-
-// //       {/* Writing Area */}
-// //       <Card>
-// //         <CardHeader>
-// //           <CardTitle>Your Response</CardTitle>
-// //         </CardHeader>
-// //         <CardContent>
-// //           <Textarea
-// //             ref={textareaRef}
-// //             placeholder="Start typing to begin the timer..."
-// //             value={response}
-// //             onChange={(e) => handleTextChange(e.target.value)}
-// //             className="min-h-[300px] resize-none"
-// //             disabled={isCompleted && timeLeft === 0}
-// //           />
-          
-// //           {!isTimerActive && !isCompleted && response.length === 0 && (
-// //             <Alert className="mt-4">
-// //               <AlertDescription>
-// //                 💡 The timer will start automatically when you begin typing.
-// //               </AlertDescription>
-// //             </Alert>
-// //           )}
-
-// //           {isCompleted && (
-// //             <Alert className="mt-4">
-// //               <AlertDescription>
-// //                 ✅ Task completed! You can now submit your response to WhatsApp.
-// //               </AlertDescription>
-// //             </Alert>
-// //           )}
-
-// //           {timeLeft === 0 && (
-// //             <Alert className="mt-4 border-red-200 bg-red-50">
-// //               <AlertDescription className="text-red-800">
-// //                 ⏰ Time's up! Please submit your response.
-// //               </AlertDescription>
-// //             </Alert>
-// //           )}
-// //         </CardContent>
-// //       </Card>
-
-// //       {/* Submit Button */}
-// //       <div className="flex justify-center">
-// //         <Button 
-// //           onClick={handleSubmit}
-// //           disabled={!canSubmit}
-// //           className="flex items-center gap-2 px-8"
-// //           size="lg"
-// //         >
-// //           <Send className="h-4 w-4" />
-// //           Submit to WhatsApp
-// //         </Button>
-// //       </div>
-// //     </div>
-// //   );
-// // }
-
-
-
-
-// import { useState, useEffect, useRef } from 'react';
-// import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-// import { Button } from './ui/button';
-// import { Textarea } from './ui/textarea';
-// import { Progress } from './ui/progress';
-// import { ArrowLeft, Clock, FileText, Send } from 'lucide-react';
-// import { Alert, AlertDescription } from './ui/alert';
-
-
-// interface Question {
-//   id: string;
-//   type: 'writing' | 'audio';
-//   title: string;
-//   content: string;
-//   imageUrl?: string;
-//   timeLimit: number;
-//   wordLimit?: number;
-// }
-
-
-// interface WritingTaskProps {
-//   question: Question;
-//   studentName: string;
-//   onBack: () => void;
-// }
-
-
-// export function WritingTask({ question, studentName, onBack }: WritingTaskProps) {
-//   const [response, setResponse] = useState('');
-//   const [timeLeft, setTimeLeft] = useState(question.timeLimit * 60); // Convertir en secondes
-//   const [isTimerActive, setIsTimerActive] = useState(false);
-//   const [isCompleted, setIsCompleted] = useState(false);
-//   const [wordCount, setWordCount] = useState(0);
-//   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-
-//   useEffect(() => {
-//     let interval: NodeJS.Timeout;
-//     if (isTimerActive && timeLeft > 0 && !isCompleted) {
-//       interval = setInterval(() => {
-//         setTimeLeft((time) => {
-//           if (time <= 1) {
-//             setIsTimerActive(false);
-//             setIsCompleted(true);
-//             // Télécharger automatiquement la réponse lorsque le temps est écoulé
-//             downloadResponse();
-//             return 0;
-//           }
-//           return time - 1;
-//         });
-//       }, 1000);
-//     }
-//     return () => clearInterval(interval);
-//   }, [isTimerActive, timeLeft, isCompleted]);
-
-
-//   useEffect(() => {
-//     // Compter les mots
-//     const words = response.trim().split(/\s+/).filter(word => word.length > 0);
-//     setWordCount(words.length);
-//   }, [response]);
-
-
-//   const handleTextChange = (value: string) => {
-//     setResponse(value);
-    
-//     // Démarrer le chronomètre au premier caractère tapé
-//     if (!isTimerActive && !isCompleted && value.length === 1) {
-//       setIsTimerActive(true);
-//     }
-//   };
-
-
-//   const formatTime = (seconds: number) => {
-//     const mins = Math.floor(seconds / 60);
-//     const secs = seconds % 60;
-//     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-//   };
-
-
-//   const getProgressPercentage = () => {
-//     const totalTime = question.timeLimit * 60;
-//     return ((totalTime - timeLeft) / totalTime) * 100;
-//   };
-
-
-//   const getWordCountStatus = () => {
-//     if (!question.wordLimit) return 'text-gray-600';
-//     if (wordCount < question.wordLimit * 0.8) return 'text-orange-600';
-//     if (wordCount > question.wordLimit * 1.2) return 'text-red-600';
-//     return 'text-green-600';
-//   };
-
-
-//   const downloadResponse = () => {
-//     if (response.trim()) {
-//       const blob = new Blob([response], { type: 'text/plain' });
-//       const url = URL.createObjectURL(blob);
-//       const a = document.createElement('a');
-//       a.href = url;
-//       a.download = `${studentName}_${question.title}_${new Date().toISOString().split('T')[0]}.txt`;
-//       document.body.appendChild(a);
-//       a.click();
-//       document.body.removeChild(a);
-//       URL.revokeObjectURL(url);
-//     }
-//   };
-
-
-//   const handleSubmit = () => {
-//     setIsCompleted(true);
-//     setIsTimerActive(false);
-    
-//     // Télécharger la réponse
-//     downloadResponse();
-    
-//     // Créer un message WhatsApp pour l'administrateur
-//     const message = `Soumission de tâche écrite TCF Canada
-
-
-// Étudiant : ${studentName}
-// Tâche : ${question.title}
-// Nombre de mots : ${wordCount}${question.wordLimit ? ` / ${question.wordLimit}` : ''}
-// Temps utilisé : ${formatTime(question.timeLimit * 60 - timeLeft)}
-
-
-// Note : Veuillez noter que le fichier de la réponse écrite a été téléchargé bien vouloir le joindre manuellement.`;
-
-//     const encodedMessage = encodeURIComponent(message);
-//     const whatsappUrl = `https://wa.me/+237656450825?text=${encodedMessage}`;
-//     window.open(whatsappUrl, '_blank');
-//   };
-
-
-//   const canSubmit = response.trim().length > 0 && (isCompleted || timeLeft === 0);
-
-
-//   return (
-//     <div className="max-w-4xl mx-auto space-y-6">
-//       {/* En-tête */}
-//       <div className="flex items-center gap-4">
-//         <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
-//           <ArrowLeft className="h-4 w-4" />
-//           Retour aux tâches
-//         </Button>
-//         <div>
-//           <h2 className="text-xl font-semibold">{question.title}</h2>
-//           <p className="text-gray-600">Étudiant : {studentName}</p>
-//         </div>
-//       </div>
-
-
-//       {/* Instructions de la tâche */}
-//       <Card>
-//         <CardHeader>
-//           <CardTitle className="flex items-center gap-2">
-//             <FileText className="h-5 w-5" />
-//             Instructions de la tâche
-//           </CardTitle>
-//         </CardHeader>
-//         <CardContent className="space-y-4">
-//           {question.imageUrl && (
-//             <div className="border rounded-lg overflow-hidden">
-//               <img 
-//                 src={question.imageUrl} 
-//                 alt="Image de la tâche" 
-//                 className="w-full max-h-96 object-contain"
-//               />
-//             </div>
-//           )}
-//           <p className="whitespace-pre-wrap">{question.content}</p>
-//         </CardContent>
-//       </Card>
-
-
-//       {/* Chronomètre et statistiques */}
-//       <div className="grid md:grid-cols-3 gap-4">
-//         <Card>
-//           <CardContent className="pt-6">
-//             <div className="flex items-center gap-3">
-//               <Clock className="h-5 w-5 text-blue-600" />
-//               <div>
-//                 <p className="text-sm text-gray-600">Temps restant</p>
-//                 <p className={`text-lg font-mono ${timeLeft < 300 ? 'text-red-600' : 'text-gray-900'}`}>
-//                   {formatTime(timeLeft)}
-//                 </p>
-//               </div>
-//             </div>
-//           </CardContent>
-//         </Card>
-
-
-//         <Card>
-//           <CardContent className="pt-6">
-//             <div className="flex items-center gap-3">
-//               <FileText className="h-5 w-5 text-green-600" />
-//               <div>
-//                 <p className="text-sm text-gray-600">Nombre de mots</p>
-//                 <p className={`text-lg font-mono ${getWordCountStatus()}`}>
-//                   {wordCount}{question.wordLimit ? ` / ${question.wordLimit}` : ''}
-//                 </p>
-//               </div>
-//             </div>
-//           </CardContent>
-//         </Card>
-
-
-//         <Card>
-//           <CardContent className="pt-6">
-//             <div>
-//               <p className="text-sm text-gray-600 mb-2">Progression</p>
-//               <Progress value={getProgressPercentage()} className="h-2" />
-//               <p className="text-xs text-gray-500 mt-1">
-//                 {Math.round(getProgressPercentage())}% terminé
-//               </p>
-//             </div>
-//           </CardContent>
-//         </Card>
-//       </div>
-
-
-//       {/* Zone de rédaction */}
-//       <Card>
-//         <CardHeader>
-//           <CardTitle>Votre réponse</CardTitle>
-//         </CardHeader>
-//         <CardContent>
-//           <Textarea
-//             ref={textareaRef}
-//             placeholder="Commencez à taper pour démarrer le chronomètre..."
-//             value={response}
-//             onChange={(e) => handleTextChange(e.target.value)}
-//             className="min-h-[300px] resize-none"
-//             disabled={isCompleted && timeLeft === 0}
-//           />
-          
-//           {!isTimerActive && !isCompleted && response.length === 0 && (
-//             <Alert className="mt-4">
-//               <AlertDescription>
-//                 💡 Le chronomètre démarrera automatiquement lorsque vous commencerez à taper.
-//               </AlertDescription>
-//             </Alert>
-//           )}
-
-
-//           {isCompleted && (
-//             <Alert className="mt-4">
-//               <AlertDescription>
-//                 ✅ Tâche terminée ! Vous pouvez maintenant soumettre votre réponse sur WhatsApp.
-//               </AlertDescription>
-//             </Alert>
-//           )}
-
-
-//           {timeLeft === 0 && (
-//             <Alert className="mt-4 border-red-200 bg-red-50">
-//               <AlertDescription className="text-red-800">
-//                 ⏰ Temps écoulé ! Veuillez soumettre votre réponse.
-//               </AlertDescription>
-//             </Alert>
-//           )}
-//         </CardContent>
-//       </Card>
-
-
-//       {/* Bouton de soumission */}
-//       <div className="flex justify-center">
-//         <Button 
-//           onClick={handleSubmit}
-//           disabled={!canSubmit}
-//           className="flex items-center gap-2 px-8"
-//           size="lg"
-//         >
-//           <Send className="h-4 w-4" />
-//           Soumettre sur WhatsApp
-//         </Button>
-//       </div>
-//     </div>
-//   );
-// }
-
-
-
-
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Progress } from './ui/progress';
-import { ArrowLeft, Clock, FileText, Send, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Clock, FileText, Send, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
+import { Badge } from './ui/badge';
 
 interface Question {
   id: string;
@@ -560,6 +15,13 @@ interface Question {
   imageUrl?: string;
   timeLimit: number;
   wordLimit?: number;
+  subtasks?: Array<{
+    id: number;
+    title: string;
+    instruction: string;
+    suggestedWordCount?: string;
+    imageUrl?: string; // Image per subtask
+  }>;
 }
 
 interface WritingTaskProps {
@@ -568,25 +30,49 @@ interface WritingTaskProps {
   onBack: () => void;
 }
 
-interface SubtaskData {
+interface Task {
   id: number;
   title: string;
-  content: string;
+  instruction: string;
+  response: string;
   wordCount: number;
+  isCompleted: boolean;
+  suggestedWordCount?: string;
+  imageUrl?: string;
 }
 
 export function WritingTask({ question, studentName, onBack }: WritingTaskProps) {
-  const [currentSubtask, setCurrentSubtask] = useState(0);
-  const [subtasks, setSubtasks] = useState<SubtaskData[]>([
-    { id: 1, title: 'Sous-tâche 1', content: '', wordCount: 0 },
-    { id: 2, title: 'Sous-tâche 2', content: '', wordCount: 0 },
-    { id: 3, title: 'Sous-tâche 3', content: '', wordCount: 0 }
-  ]);
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [timeLeft, setTimeLeft] = useState(question.timeLimit * 60);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [totalWordCount, setTotalWordCount] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Initialize tasks
+  useEffect(() => {
+    if (question.subtasks && question.subtasks.length > 0) {
+      const initialTasks = question.subtasks.map(subtask => ({
+        id: subtask.id,
+        title: subtask.title,
+        instruction: subtask.instruction,
+        response: '',
+        wordCount: 0,
+        isCompleted: false,
+        suggestedWordCount: subtask.suggestedWordCount,
+        imageUrl: subtask.imageUrl
+      }));
+      setTasks(initialTasks);
+    } else {
+      const defaultTasks = [
+        { id: 1, title: 'Tâche 1', instruction: 'Présentez votre point de vue (60-80 mots)', response: '', wordCount: 0, isCompleted: false, suggestedWordCount: '60-80 mots' },
+        { id: 2, title: 'Tâche 2', instruction: 'Développez avec des exemples (120-150 mots)', response: '', wordCount: 0, isCompleted: false, suggestedWordCount: '120-150 mots' },
+        { id: 3, title: 'Tâche 3', instruction: 'Concluez avec des solutions (160-180 mots)', response: '', wordCount: 0, isCompleted: false, suggestedWordCount: '160-180 mots' }
+      ];
+      setTasks(defaultTasks);
+    }
+  }, [question]);
 
   // Timer effect
   useEffect(() => {
@@ -607,26 +93,32 @@ export function WritingTask({ question, studentName, onBack }: WritingTaskProps)
     return () => clearInterval(interval);
   }, [isTimerActive, timeLeft, isCompleted]);
 
-  // Update total word count when subtasks change
+  // Update total word count
   useEffect(() => {
-    const total = subtasks.reduce((sum, subtask) => sum + subtask.wordCount, 0);
+    const total = tasks.reduce((sum, task) => sum + task.wordCount, 0);
     setTotalWordCount(total);
-  }, [subtasks]);
+  }, [tasks]);
 
   const handleTextChange = (value: string) => {
     const words = value.trim().split(/\s+/).filter(word => word.length > 0);
     const wordCount = words.length;
 
-    // Update current subtask
-    const updatedSubtasks = subtasks.map((subtask, index) => 
-      index === currentSubtask 
-        ? { ...subtask, content: value, wordCount }
-        : subtask
-    );
-    setSubtasks(updatedSubtasks);
+    const updatedTasks = tasks.map((task, index) => {
+      if (index === currentTaskIndex) {
+        return {
+          ...task,
+          response: value,
+          wordCount: wordCount,
+          isCompleted: value.trim().length > 20
+        };
+      }
+      return task;
+    });
+    
+    setTasks(updatedTasks);
 
     // Start timer on first keystroke
-    if (!isTimerActive && !isCompleted && value.length === 1 && currentSubtask === 0) {
+    if (!isTimerActive && !isCompleted && value.length === 1) {
       setIsTimerActive(true);
     }
   };
@@ -637,152 +129,105 @@ export function WritingTask({ question, studentName, onBack }: WritingTaskProps)
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getProgressPercentage = () => {
-    const totalTime = question.timeLimit * 60;
-    return ((totalTime - timeLeft) / totalTime) * 100;
-  };
-
-  const getWordCountStatus = () => {
-    if (!question.wordLimit) return 'text-gray-600';
-    if (totalWordCount < question.wordLimit * 0.8) return 'text-orange-600';
-    if (totalWordCount > question.wordLimit * 1.2) return 'text-red-600';
-    return 'text-green-600';
-  };
-
-  const saveToFirestore = async () => {
-    const sessionData = {
-      studentName,
-      questionId: question.id,
-      questionTitle: question.title,
-      subtasks: subtasks.map(subtask => ({
-        id: subtask.id,
-        title: subtask.title,
-        content: subtask.content,
-        wordCount: subtask.wordCount
-      })),
-      totalWordCount,
-      timeUsed: question.timeLimit * 60 - timeLeft,
-      timeLimit: question.timeLimit * 60,
-      completedAt: new Date().toISOString(),
-      isCompleted: true
-    };
-
-    try {
-      // In a real implementation, you'd use Firebase SDK
-      console.log('Saving to Firestore:', sessionData);
-      
-      // For now, also save to localStorage as backup
-      const existingSessions = JSON.parse(localStorage.getItem('tcf-sessions') || '[]');
-      existingSessions.push(sessionData);
-      localStorage.setItem('tcf-sessions', JSON.stringify(existingSessions));
-      
-      return sessionData;
-    } catch (error) {
-      console.error('Error saving to Firestore:', error);
-      throw error;
+  const goToTask = (taskIndex: number) => {
+    if (taskIndex >= 0 && taskIndex < tasks.length) {
+      setCurrentTaskIndex(taskIndex);
     }
   };
 
+  const getCurrentTask = () => tasks[currentTaskIndex];
+
+  // Get word count status with color coding
+  const getWordCountStatus = (currentWords: number, suggested?: string) => {
+    if (!suggested) return 'text-gray-600';
+    
+    const match = suggested.match(/(\d+)-(\d+)/);
+    if (!match) return 'text-gray-600';
+    
+    const min = parseInt(match[1]);
+    const max = parseInt(match[2]);
+    
+    if (currentWords < min * 0.8) return 'text-red-500'; // Too few
+    if (currentWords >= min && currentWords <= max) return 'text-green-600'; // Perfect range
+    if (currentWords > max * 1.2) return 'text-orange-500'; // Too many
+    return 'text-blue-600'; // Getting close
+  };
+
   const downloadAllResponses = () => {
-    const allContent = subtasks.map((subtask, index) => 
-      `${subtask.title}:\n${subtask.content}\n\n`
+    const allContent = tasks.map((task) => 
+      `${task.title} (${task.wordCount} mots):\n${task.instruction}\n\nRéponse:\n${task.response}\n\n${'='.repeat(50)}\n\n`
     ).join('');
 
-    const blob = new Blob([allContent], { type: 'text/plain' });
+    const summary = `TCF Canada - Expression Écrite
+Étudiant: ${studentName}
+Temps utilisé: ${formatTime(question.timeLimit * 60 - timeLeft)}
+Mots total: ${totalWordCount}
+
+${allContent}`;
+
+    const blob = new Blob([summary], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${studentName}_${question.title}_${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `${studentName}_TCF_Expression_Ecrite.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  const handleAutoSubmit = async () => {
-    try {
-      await saveToFirestore();
-      downloadAllResponses();
-    } catch (error) {
-      console.error('Auto-submit failed:', error);
-    }
+  const handleAutoSubmit = () => {
+    downloadAllResponses();
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     setIsCompleted(true);
     setIsTimerActive(false);
+    downloadAllResponses();
     
-    try {
-      await saveToFirestore();
-      downloadAllResponses();
-      
-      // Create WhatsApp message
-      const message = `Soumission de tâche écrite TCF Canada
+    const message = `TCF Canada - Expression Écrite
+Étudiant: ${studentName}
+Tâches: ${tasks.filter(t => t.isCompleted).length}/3
+Temps: ${formatTime(question.timeLimit * 60 - timeLeft)}
+Mots: ${totalWordCount}`;
 
-Étudiant : ${studentName}
-Tâche : ${question.title}
-Sous-tâches complétées : ${subtasks.filter(s => s.content.trim().length > 0).length}/3
-Nombre total de mots : ${totalWordCount}${question.wordLimit ? ` / ${question.wordLimit}` : ''}
-Temps utilisé : ${formatTime(question.timeLimit * 60 - timeLeft)}
-
-Détails par sous-tâche :
-${subtasks.map(subtask => `${subtask.title}: ${subtask.wordCount} mots`).join('\n')}
-
-Note : Le fichier avec toutes les réponses a été téléchargé et sauvegardé dans le système.`;
-
-      const encodedMessage = encodeURIComponent(message);
-      const whatsappUrl = `https://wa.me/+237656450825?text=${encodedMessage}`;
-      window.open(whatsappUrl, '_blank');
-    } catch (error) {
-      console.error('Submit failed:', error);
-      alert('Erreur lors de la sauvegarde. Veuillez réessayer.');
-    }
+    const whatsappUrl = `https://wa.me/+237656450825?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
   };
 
-  const canSubmit = subtasks.some(s => s.content.trim().length > 0) && (isCompleted || timeLeft === 0);
+  if (tasks.length === 0) {
+    return <div className="max-w-4xl mx-auto">Chargement...</div>;
+  }
 
-  const goToSubtask = (index: number) => {
-    if (index >= 0 && index < subtasks.length) {
-      setCurrentSubtask(index);
-    }
-  };
+  const completedTasksCount = tasks.filter(t => t.isCompleted).length;
+  const currentTask = getCurrentTask();
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="outline" onClick={onBack} className="flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Retour aux tâches
+        <Button variant="outline" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" /> Retour
         </Button>
         <div>
           <h2 className="text-xl font-semibold">{question.title}</h2>
-          <p className="text-gray-600">Étudiant : {studentName}</p>
+          <p className="text-gray-600">Étudiant: {studentName}</p>
         </div>
       </div>
 
-      {/* Task Instructions */}
+      {/* Instructions */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Instructions de la tâche
-          </CardTitle>
+          <CardTitle>Consignes générales</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           {question.imageUrl && (
-            <div className="border rounded-lg overflow-hidden">
-              <img 
-                src={question.imageUrl} 
-                alt="Image de la tâche" 
-                className="w-full max-h-96 object-contain"
-              />
-            </div>
+            <img src={question.imageUrl} alt="Document" className="w-full max-h-96 object-contain mb-4 rounded-lg border" />
           )}
-          <p className="whitespace-pre-wrap">{question.content}</p>
-          <Alert>
+          <p>{question.content}</p>
+          <Alert className="mt-4">
             <AlertDescription>
-              Cette tâche est divisée en 3 sous-tâches. Vous avez un seul chronomètre pour toutes les sous-tâches.
+              Vous avez 3 tâches à compléter avec un seul chronomètre.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -810,9 +255,7 @@ Note : Le fichier avec toutes les réponses a été téléchargé et sauvegardé
               <FileText className="h-5 w-5 text-green-600" />
               <div>
                 <p className="text-sm text-gray-600">Mots totaux</p>
-                <p className={`text-lg font-mono ${getWordCountStatus()}`}>
-                  {totalWordCount}{question.wordLimit ? ` / ${question.wordLimit}` : ''}
-                </p>
+                <p className="text-lg font-mono">{totalWordCount}</p>
               </div>
             </div>
           </CardContent>
@@ -822,66 +265,111 @@ Note : Le fichier avec toutes les réponses a été téléchargé et sauvegardé
           <CardContent className="pt-6">
             <div>
               <p className="text-sm text-gray-600 mb-2">Progression</p>
-              <Progress value={getProgressPercentage()} className="h-2" />
-              <p className="text-xs text-gray-500 mt-1">
-                {Math.round(getProgressPercentage())}% terminé
-              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-mono">{completedTasksCount}/3</span>
+                <Progress value={(completedTasksCount / 3) * 100} className="h-2 flex-1" />
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Subtask Navigation */}
+      {/* Task Navigation */}
       <Card>
         <CardHeader>
-          <CardTitle>Sous-tâches</CardTitle>
+          <CardTitle>Navigation des tâches</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2 flex-wrap">
-            {subtasks.map((subtask, index) => (
+          <div className="flex gap-3 flex-wrap">
+            {tasks.map((task, index) => (
               <Button
-                key={subtask.id}
-                variant={currentSubtask === index ? "default" : "outline"}
-                onClick={() => goToSubtask(index)}
+                key={task.id}
+                variant={currentTaskIndex === index ? "default" : "outline"}
+                onClick={() => goToTask(index)}
                 className="flex items-center gap-2"
               >
-                {subtask.content.trim().length > 0 && (
-                  <CheckCircle className="h-3 w-3 text-green-600" />
-                )}
-                {subtask.title} ({subtask.wordCount} mots)
+                {task.isCompleted && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+                {task.title}
+                <Badge 
+                  variant="secondary"
+                  className={getWordCountStatus(task.wordCount, task.suggestedWordCount)}
+                >
+                  {task.wordCount}
+                </Badge>
               </Button>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Writing Area */}
+      {/* Current Task */}
       <Card>
         <CardHeader>
-          <CardTitle>{subtasks[currentSubtask].title}</CardTitle>
+          <CardTitle className="flex items-center justify-between">
+            <span>{currentTask.title}</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-lg font-mono ${getWordCountStatus(currentTask.wordCount, currentTask.suggestedWordCount)}`}>
+                {currentTask.wordCount} mots
+              </span>
+              {currentTask.suggestedWordCount && (
+                <span className="text-sm text-gray-500">
+                  (Nombre de mots: {currentTask.suggestedWordCount})
+                </span>
+              )}
+            </div>
+          </CardTitle>
+          <CardDescription>{currentTask.instruction}</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Task-specific image */}
+          {currentTask.imageUrl && (
+            <div className="mb-4">
+              <img 
+                src={currentTask.imageUrl} 
+                alt={`Image pour ${currentTask.title}`} 
+                className="w-full max-h-64 object-contain rounded-lg border"
+              />
+            </div>
+          )}
+          
           <Textarea
             ref={textareaRef}
-            placeholder={`Rédigez votre réponse pour la ${subtasks[currentSubtask].title.toLowerCase()}...`}
-            value={subtasks[currentSubtask].content}
+            placeholder={`Rédigez votre réponse...`}
+            value={currentTask.response}
             onChange={(e) => handleTextChange(e.target.value)}
             className="min-h-[300px] resize-none"
-            disabled={isCompleted && timeLeft === 0}
+            disabled={isCompleted}
           />
           
-          {!isTimerActive && !isCompleted && currentSubtask === 0 && subtasks[0].content.length === 0 && (
+          {/* Real-time word counter */}
+          <div className="mt-2 flex justify-between items-center text-sm">
+            <span className={getWordCountStatus(currentTask.wordCount, currentTask.suggestedWordCount)}>
+              {currentTask.wordCount} mots
+              {currentTask.suggestedWordCount && (
+                <span className="text-gray-500"> / {currentTask.suggestedWordCount}</span>
+              )}
+            </span>
+            {currentTask.suggestedWordCount && (
+              <span className="text-gray-400">
+                {(() => {
+                  const match = currentTask.suggestedWordCount.match(/(\d+)-(\d+)/);
+                  if (!match) return '';
+                  const min = parseInt(match[1]);
+                  const max = parseInt(match[2]);
+                  const current = currentTask.wordCount;
+                  
+                  if (current < min) return `${min - current} mots de plus nécessaires`;
+                  if (current > max) return `${current - max} mots en trop`;
+                  return 'Dans la plage recommandée';
+                })()}
+              </span>
+            )}
+          </div>
+          
+          {!isTimerActive && !isCompleted && currentTask.response.length === 0 && (
             <Alert className="mt-4">
               <AlertDescription>
-                Le chronomètre démarrera automatiquement lorsque vous commencerez à taper dans la première sous-tâche.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {isCompleted && (
-            <Alert className="mt-4">
-              <AlertDescription>
-                Tâche terminée ! Vous pouvez maintenant soumettre votre réponse sur WhatsApp.
+                Le chronomètre démarrera quand vous commencerez à écrire.
               </AlertDescription>
             </Alert>
           )}
@@ -889,27 +377,27 @@ Note : Le fichier avec toutes les réponses a été téléchargé et sauvegardé
           {timeLeft === 0 && (
             <Alert className="mt-4 border-red-200 bg-red-50">
               <AlertDescription className="text-red-800">
-                Temps écoulé ! Veuillez soumettre votre réponse.
+                Temps écoulé! Soumettez votre travail.
               </AlertDescription>
             </Alert>
           )}
         </CardContent>
       </Card>
 
-      {/* Navigation and Submit */}
+      {/* Submit */}
       <div className="flex justify-between">
         <div className="flex gap-2">
           <Button 
             variant="outline"
-            onClick={() => goToSubtask(currentSubtask - 1)}
-            disabled={currentSubtask === 0}
+            onClick={() => goToTask(currentTaskIndex - 1)}
+            disabled={currentTaskIndex === 0}
           >
             Précédent
           </Button>
           <Button 
             variant="outline"
-            onClick={() => goToSubtask(currentSubtask + 1)}
-            disabled={currentSubtask === subtasks.length - 1}
+            onClick={() => goToTask(currentTaskIndex + 1)}
+            disabled={currentTaskIndex === tasks.length - 1}
           >
             Suivant
           </Button>
@@ -917,12 +405,11 @@ Note : Le fichier avec toutes les réponses a été téléchargé et sauvegardé
 
         <Button 
           onClick={handleSubmit}
-          disabled={!canSubmit}
-          className="flex items-center gap-2 px-8"
-          size="lg"
+          disabled={!tasks.some(t => t.response.trim().length > 0)}
+          className="flex items-center gap-2"
         >
           <Send className="h-4 w-4" />
-          Soumettre sur WhatsApp
+          Soumettre
         </Button>
       </div>
     </div>

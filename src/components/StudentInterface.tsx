@@ -1,5 +1,4 @@
 
-
 import { useState, useEffect } from 'react';
 import { WritingTask } from './WritingTask';
 import { AudioTask } from './AudioTask';
@@ -7,36 +6,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
-//import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { User, PenTool, Mic } from 'lucide-react';
-
-
-interface Question {
-  id: string;
-  type: 'writing' | 'audio';
-  title: string;
-  content: string;
-  timeLimit: number; // en minutes
-  wordLimit?: number; // pour les tâches écrites
-}
-
+import { User, PenTool, Mic, Loader2 } from 'lucide-react';
+import { dbOperations, type Question } from '../lib/firebase';
 
 export function StudentInterface() {
   const [studentName, setStudentName] = useState('');
   const [selectedTask, setSelectedTask] = useState<Question | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isNameSet, setIsNameSet] = useState(false);
-
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Charger les questions depuis le localStorage
-    const savedQuestions = localStorage.getItem('tcf-questions');
-    if (savedQuestions) {
-      setQuestions(JSON.parse(savedQuestions));
-    }
-
-
-    // Charger le nom de l'étudiant depuis le localStorage
+    loadQuestions();
+    
+    // Load student name from localStorage
     const savedName = localStorage.getItem('tcf-student-name');
     if (savedName) {
       setStudentName(savedName);
@@ -44,27 +27,36 @@ export function StudentInterface() {
     }
   }, []);
 
+  const loadQuestions = async () => {
+    setLoading(true);
+    try {
+      const questionsData = await dbOperations.getQuestions();
+      setQuestions(questionsData);
+    } catch (error) {
+      console.error('Error loading questions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleStartTask = () => {
     if (studentName.trim()) {
       localStorage.setItem('tcf-student-name', studentName);
       setIsNameSet(true);
-      // Déclencher un événement personnalisé pour notifier les autres composants du changement
       window.dispatchEvent(new Event('tcf-student-name-change'));
     }
   };
-
 
   const handleSelectTask = (questionId: string) => {
     const question = questions.find(q => q.id === questionId);
     setSelectedTask(question || null);
   };
 
-
   const handleBackToTasks = () => {
     setSelectedTask(null);
+    // Reload questions when coming back to refresh data
+    loadQuestions();
   };
-
 
   if (!isNameSet) {
     return (
@@ -103,7 +95,6 @@ export function StudentInterface() {
     );
   }
 
-
   if (selectedTask) {
     return selectedTask.type === 'writing' ? (
       <WritingTask 
@@ -120,21 +111,36 @@ export function StudentInterface() {
     );
   }
 
-
   const writingTasks = questions.filter(q => q.type === 'writing');
   const audioTasks = questions.filter(q => q.type === 'audio');
-
 
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-semibold text-gray-900">Bienvenue, {studentName} !</h2>
         <p className="text-gray-600 mt-2">Choisissez une tâche pour commencer votre préparation TCF Canada</p>
+        {loading && (
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span className="text-sm text-gray-500">Chargement des tâches depuis Firebase...</span>
+          </div>
+        )}
       </div>
 
+      <div className="flex justify-center mb-4">
+        <Button 
+          variant="outline"
+          onClick={loadQuestions}
+          disabled={loading}
+          className="flex items-center gap-2"
+        >
+          {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+          Actualiser les tâches
+        </Button>
+      </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Tâches écrites */}
+        {/* Writing Tasks */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -148,16 +154,27 @@ export function StudentInterface() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {writingTasks.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">Aucune tâche écrite disponible. Veuillez contacter votre administrateur.</p>
+            {loading ? (
+              <div className="text-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                <p className="text-sm text-gray-500 mt-2">Chargement...</p>
+              </div>
+            ) : writingTasks.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">
+                Aucune tâche écrite disponible. Contactez votre administrateur.
+              </p>
             ) : (
               writingTasks.map((task) => (
-                <div key={task.id} className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                     onClick={() => handleSelectTask(task.id)}>
+                <div 
+                  key={task.id} 
+                  className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => handleSelectTask(task.id)}
+                >
                   <h4 className="font-medium">{task.title}</h4>
                   <div className="text-sm text-gray-600 mt-1 flex gap-4">
                     <span>⏱️ {task.timeLimit} min</span>
                     {task.wordLimit && <span>📝 {task.wordLimit} mots</span>}
+                    {task.subtasks && <span>📋 3 sous-tâches</span>}
                   </div>
                 </div>
               ))
@@ -165,8 +182,7 @@ export function StudentInterface() {
           </CardContent>
         </Card>
 
-
-        {/* Tâches orales */}
+        {/* Audio Tasks */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -180,15 +196,26 @@ export function StudentInterface() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {audioTasks.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">Aucune tâche orale disponible. Veuillez contacter votre administrateur.</p>
+            {loading ? (
+              <div className="text-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                <p className="text-sm text-gray-500 mt-2">Chargement...</p>
+              </div>
+            ) : audioTasks.length === 0 ? (
+              <p className="text-gray-500 text-center py-4">
+                Aucune tâche orale disponible. Contactez votre administrateur.
+              </p>
             ) : (
               audioTasks.map((task) => (
-                <div key={task.id} className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                     onClick={() => handleSelectTask(task.id)}>
+                <div 
+                  key={task.id} 
+                  className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => handleSelectTask(task.id)}
+                >
                   <h4 className="font-medium">{task.title}</h4>
                   <div className="text-sm text-gray-600 mt-1">
                     <span>⏱️ {task.timeLimit} min</span>
+                    {task.imageUrl && <span className="ml-2">🖼️ Avec image</span>}
                   </div>
                 </div>
               ))
@@ -197,7 +224,6 @@ export function StudentInterface() {
         </Card>
       </div>
 
-
       <div className="text-center">
         <Button 
           variant="outline" 
@@ -205,7 +231,6 @@ export function StudentInterface() {
             setIsNameSet(false);
             setStudentName('');
             localStorage.removeItem('tcf-student-name');
-            // Déclencher un événement personnalisé pour notifier les autres composants du changement
             window.dispatchEvent(new Event('tcf-student-name-change'));
           }}
         >
