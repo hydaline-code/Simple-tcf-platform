@@ -2,15 +2,15 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 
-// Firebase config - REPLACE with your actual config
+
 const firebaseConfig = {
-  apiKey: "AIzaSyDA9Ypn2XK6KHaAFdIFvRqr2S_obed3n_c",
-  authDomain: "plateformtcf.firebaseapp.com",
-  projectId: "plateformtcf",
-  storageBucket: "plateformtcf.firebasestorage.app",
-  messagingSenderId: "108493810812",
-  appId: "1:108493810812:web:c4158cacdd86ce1d90edf9",
-  measurementId: "G-084DLZE0MG"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
@@ -118,19 +118,61 @@ async saveQuestion(questionData: Omit<Question, 'id' | 'createdAt'>): Promise<st
     }
   },
 
+  // async updateQuestion(id: string, questionData: Partial<Question>): Promise<void> {
+  //   try {
+  //     await updateDoc(doc(db, COLLECTIONS.QUESTIONS, id), questionData);
+  //   } catch (error) {
+  //     console.warn('Firebase error, using localStorage:', error);
+  //     const questions = JSON.parse(localStorage.getItem('tcf-questions') || '[]');
+  //     const index = questions.findIndex((q: Question) => q.id === id);
+  //     if (index !== -1) {
+  //       questions[index] = { ...questions[index], ...questionData };
+  //       localStorage.setItem('tcf-questions', JSON.stringify(questions));
+  //     }
+  //   }
+  // },
+
+
   async updateQuestion(id: string, questionData: Partial<Question>): Promise<void> {
-    try {
-      await updateDoc(doc(db, COLLECTIONS.QUESTIONS, id), questionData);
-    } catch (error) {
-      console.warn('Firebase error, using localStorage:', error);
-      const questions = JSON.parse(localStorage.getItem('tcf-questions') || '[]');
-      const index = questions.findIndex((q: Question) => q.id === id);
-      if (index !== -1) {
-        questions[index] = { ...questions[index], ...questionData };
-        localStorage.setItem('tcf-questions', JSON.stringify(questions));
-      }
+  console.log('🔥 Attempting to update question:', id, questionData);
+  
+  try {
+    // Clean the update data - remove undefined values
+    const cleanUpdateData: any = {};
+    
+    if (questionData.type !== undefined) cleanUpdateData.type = questionData.type;
+    if (questionData.title !== undefined) cleanUpdateData.title = questionData.title;
+    if (questionData.content !== undefined) cleanUpdateData.content = questionData.content;
+    if (questionData.timeLimit !== undefined) cleanUpdateData.timeLimit = questionData.timeLimit;
+    if (questionData.imageUrl !== undefined && questionData.imageUrl !== '') {
+      cleanUpdateData.imageUrl = questionData.imageUrl;
     }
-  },
+    if (questionData.wordLimit !== undefined && questionData.wordLimit !== null) {
+      cleanUpdateData.wordLimit = questionData.wordLimit;
+    }
+    if (questionData.subtasks !== undefined && questionData.subtasks !== null) {
+      cleanUpdateData.subtasks = questionData.subtasks;
+    }
+    
+    console.log('🔥 Cleaned update data:', cleanUpdateData);
+    
+    await updateDoc(doc(db, COLLECTIONS.QUESTIONS, id), cleanUpdateData);
+    console.log('✅ Firebase update SUCCESS!');
+  } catch (error) {
+    console.error('❌ Firebase update FAILED:', error);
+    console.warn('Firebase error, using localStorage:', error);
+    
+    const questions = JSON.parse(localStorage.getItem('tcf-questions') || '[]');
+    const index = questions.findIndex((q: Question) => q.id === id);
+    if (index !== -1) {
+      questions[index] = { ...questions[index], ...questionData };
+      localStorage.setItem('tcf-questions', JSON.stringify(questions));
+    }
+  }
+},
+
+
+
 
   async deleteQuestion(id: string): Promise<void> {
     try {
